@@ -25,7 +25,7 @@ const Account = mongoose.model('Account');
 const Contract = mongoose.model('Contract');
 const TokenTransfer = mongoose.model('TokenTransfer');
 
-const ERC20_METHOD_DIC = { '0xa9059cbb': 'transfer', '0xa978501e': 'transferFrom' };
+const ERC20_METHOD_DIC = { '0xa9059cbb': 'transfer', '0xa978501e': 'transferFrom', '0x0d5f2659':'gbzzTransfer'};
 
 /**
   Start config for node connection and sync
@@ -194,11 +194,11 @@ const writeTransactionsToDB = async (config, blockData, flush) => {
           // Write to db
           Contract.update(
             { address: contractAddress },
-            { $setOnInsert: contractdb },
+            { $set: contractdb },
             { upsert: true },
             (err, data) => {
               if (err) {
-                console.log(err);
+                console.log("Contract err", err);
               }
             },
           );
@@ -228,13 +228,45 @@ const writeTransactionsToDB = async (config, blockData, flush) => {
             // Write transfer transaction into db
             TokenTransfer.update(
               { hash: transfer.hash },
-              { $setOnInsert: transfer },
+              { $set: transfer },
               { upsert: true },
               (err, data) => {
                 if (err) {
-                  console.log(err);
+                  console.log("TokenTransfer err" ,err);
                 }
               },
+            );
+          } else if ( ERC20_METHOD_DIC[methodCode] === 'gbzzTransfer' ) {
+            const typesArray = [
+              {type: 'uint256', name: 'totalPayout'},
+              {type: 'uint256', name: 'cumulativePayout'},
+              {type: 'uint256', name: 'callerPayout'},
+            ];
+            v = 0;
+            try{
+              v = web3.eth.abi.decodeParameters(typesArray, receipt.logs[1].data).totalPayout;
+            }catch (e){
+              console.log(`\t- block #${blockData.number.toString()}} decodeParameters type error.`);
+              v = 0 ;
+            }
+            transfer.value = v;
+            transfer.from = txData.from;
+            transfer.to = `0x${txData.input.substring(34, 74)}`;
+            transfer.method = ERC20_METHOD_DIC[methodCode];
+            transfer.hash = txData.hash;
+            transfer.blockNumber = blockData.number;
+            transfer.contract = txData.to;
+            transfer.timestamp = blockData.timestamp;
+            // Write transfer transaction into db
+            TokenTransfer.update(
+                { hash: transfer.hash },
+                { $set: transfer },
+                { upsert: true },
+                (err, data) => {
+                  if (err) {
+                    console.log("TokenTransfer err", err);
+                  }
+                },
             );
           }
         }
@@ -315,22 +347,25 @@ const writeTransactionsToDB = async (config, blockData, flush) => {
     }
 
     if (bulk.length > 0) {
-      Transaction.collection.insert(bulk, (err, tx) => {
-        if (typeof err !== 'undefined' && err) {
-          if (err.code === 11000) {
-            if (!('quiet' in config && config.quiet === true)) {
-              console.log(`Skip: Duplicate transaction key ${err}`);
-            }
-          } else {
-            console.log(`Error: Aborted due to error on Transaction: ${err}`);
-            process.exit(9);
-          }
-        } else {
-          if (!('quiet' in config && config.quiet === true)) {
-            console.log(`* ${tx.insertedCount} transactions successfully recorded.`);
-          }
-        }
+      bulk.forEach((tx) => {
+        Transaction.collection.update({ hash: tx.hash }, { $set: tx }, { upsert: true });
       });
+      // Transaction.collection.insert(bulk, (err, tx) => {
+      //   if (typeof err !== 'undefined' && err) {
+      //     if (err.code === 11000) {
+      //       if (!('quiet' in config && config.quiet === true)) {
+      //         console.log(`Skip: Duplicate transaction key ${err}`);
+      //       }
+      //     } else {
+      //       console.log(`Error: Aborted due to error on Transaction: ${err}`);
+      //       process.exit(9);
+      //     }
+      //   } else {
+      //     if (!('quiet' in config && config.quiet === true)) {
+      //       console.log(`* ${tx.insertedCount} transactions successfully recorded.`);
+      //     }
+      //   }
+      // });
     }
   }
 };
