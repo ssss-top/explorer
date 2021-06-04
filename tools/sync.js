@@ -68,12 +68,20 @@ const normalizeTX = async (txData, receipt, blockData) => {
     s: txData.s,
     v: txData.v,
     gas: txData.gas,
-    gasUsed: receipt.gasUsed,
     gasPrice: String(txData.gasPrice),
     input: txData.input,
     transactionIndex: txData.transactionIndex,
     timestamp: blockData.timestamp,
   };
+  v = 0;
+  try{
+    v = receipt.gasUsed;
+  }catch (e){
+    console.log(`\t- block #${blockData.number.toString()}} gasUsed type error.`);
+    v = 0 ;
+  }
+
+  tx.gasUsed = v;
 
   if (receipt.status) {
     tx.status = receipt.status;
@@ -109,7 +117,10 @@ var writeBlockToDB = function (config, blockData, flush) {
   if (flush && self.bulkOps.length > 0 || self.bulkOps.length >= config.bulkSize) {
     const bulk = self.bulkOps;
     self.bulkOps = [];
-    if (bulk.length === 0) return;
+    if (bulk.length === 0) {
+      console.log(`\t- block #${blockData.number.toString()} bulk.length.`);
+      return;
+    }
 
     Block.collection.insert(bulk, (err, blocks) => {
       if (typeof err !== 'undefined' && err) {
@@ -211,13 +222,13 @@ const writeTransactionsToDB = async (config, blockData, flush) => {
           if (ERC20_METHOD_DIC[methodCode] === 'transfer' || ERC20_METHOD_DIC[methodCode] === 'transferFrom') {
             if (ERC20_METHOD_DIC[methodCode] === 'transfer') {
               // Token transfer transaction
-              transfer.from = txData.from;
-              transfer.to = `0x${txData.input.substring(34, 74)}`;
+              transfer.from = txData.from.toLowerCase();
+              transfer.to = `0x${txData.input.substring(34, 74)}`.toLowerCase();
               transfer.value = Number(`0x${txData.input.substring(74)}`);
             } else {
               // transferFrom
-              transfer.from = `0x${txData.input.substring(34, 74)}`;
-              transfer.to = `0x${txData.input.substring(74, 114)}`;
+              transfer.from = `0x${txData.input.substring(34, 74)}`.toLowerCase();
+              transfer.to = `0x${txData.input.substring(74, 114)}`.toLowerCase();
               transfer.value = Number(`0x${txData.input.substring(114)}`);
             }
             transfer.method = ERC20_METHOD_DIC[methodCode];
@@ -250,8 +261,8 @@ const writeTransactionsToDB = async (config, blockData, flush) => {
               v = 0 ;
             }
             transfer.value = v;
-            transfer.from = txData.from;
-            transfer.to = `0x${txData.input.substring(34, 74)}`;
+            transfer.from = txData.from.toLowerCase();
+            transfer.to = `0x${txData.input.substring(34, 74)}`.toLowerCase();
             transfer.method = ERC20_METHOD_DIC[methodCode];
             transfer.hash = txData.hash;
             transfer.blockNumber = blockData.number;
@@ -395,6 +406,13 @@ const listenBlocks = function (config) {
 /**
   If full sync is checked this function will start syncing the block chain from lastSynced param see README
 **/
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+async function sleepSecond(ms) {
+  await sleep(ms);
+  console.log('Two seconds later');
+}
 var syncChain = function (config, nextBlock) {
   if (web3.eth.net.isListening()) {
     if (typeof nextBlock === 'undefined') {
@@ -434,7 +452,7 @@ var syncChain = function (config, nextBlock) {
       nextBlock--;
       count--;
     }
-
+    console.log("setTimeout: syncChain", nextBlock, count);
     setTimeout(() => { syncChain(config, nextBlock); }, 500);
   } else {
     console.log(`Error: Web3 connection time out trying to get block ${nextBlock} retrying connection now`);
@@ -511,6 +529,7 @@ const runPatcher = async (config, startBlock, endBlock) => {
       }
 
       const lastMissingBlock = docs[0].number + 1;
+      console.log("lastMissingBlock :", lastMissingBlock);
       const currentBlock = await web3.eth.getBlockNumber();
       runPatcher(config, lastMissingBlock, currentBlock - 1);
     });
@@ -544,6 +563,7 @@ const runPatcher = async (config, startBlock, endBlock) => {
     writeBlockToDB(config, null, true);
     writeTransactionsToDB(config, null, true);
 
+    console.log("setTimeout: runPatcher", endBlock);
     setTimeout(() => { runPatcher(config, patchBlock, endBlock); }, 1000);
   } else {
     // flush
@@ -553,6 +573,64 @@ const runPatcher = async (config, startBlock, endBlock) => {
     console.log('*** Block Patching Completed ***');
   }
 };
+/**
+ 修复缺失的块， 100个算一轮排查
+ **/
+const runPatcherBlocks = async (config, startBlock, endBlock) => {
+  if (!web3 || !web3.eth.net.isListening()) {
+    console.log('Error: Web3 is not connected. Retrying connection shortly...');
+    setTimeout(() => {
+      runPatcherBlocks(config);
+    }, 3000);
+    return;
+  }
+  if (typeof startBlock === 'undefined' || typeof endBlock === 'undefined') {
+    endBlock = await web3.eth.getBlockNumber();
+  }
+  let batchCount = 100;
+  startBlock = endBlock - batchCount;
+  const blockFind = Block.find({
+    number: {
+      $gt: startBlock,
+      $lte: endBlock
+    }
+  }, 'number').lean(true).sort('-number').limit(batchCount);
+  blockFind.exec(async (err, docs) => {
+    if (err || !docs || docs.length < batchCount) {
+      console.log('start patch blocks.', docs.length);
+    }
+    let patchBlock = startBlock;
+    let count = 0;
+    console.log(`Patching from #${startBlock} to #${endBlock}`);
+    while (count < config.patchBlocks && patchBlock <= endBlock) {
+      if (!('quiet' in config && config.quiet === true)) {
+        console.log(`fix Patching Block: ${patchBlock}`);
+      }
+      web3.eth.getBlock(patchBlock, true, (error, patchData) => {
+        if (error) {
+          console.log(`Warning: error on getting block with hash/number: ${patchBlock}: ${error}`);
+        } else if (patchData === null) {
+          console.log(`Warning: null block data received from the block with hash/number: ${patchBlock}`);
+        } else {
+          console.log(`fix checkBlockDBExistsThenWrite Block: ${patchBlock}`);
+          checkBlockDBExistsThenWrite(config, patchData);
+        }
+      });
+      patchBlock++;
+      count++;
+    }
+    // flush
+    writeBlockToDB(config, null, true);
+    writeTransactionsToDB(config, null, true);
+
+    endBlock = endBlock - batchCount;
+    console.log("setTimeout: runPatcher", endBlock);
+    setTimeout(() => {
+      runPatcherBlocks(config, startBlock, endBlock);
+    }, 1000);
+  });
+};
+
 /**
   This will be used for the patcher(experimental)
 **/
@@ -632,3 +710,5 @@ if (config.settings.useFiat) {
     getQuote();
   }, quoteInterval);
 }
+console.log('fixing blocks');
+runPatcherBlocks(config);
