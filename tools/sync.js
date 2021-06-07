@@ -573,63 +573,6 @@ const runPatcher = async (config, startBlock, endBlock) => {
     console.log('*** Block Patching Completed ***');
   }
 };
-/**
- 修复缺失的块， 100个算一轮排查
- **/
-const runPatcherBlocks = async (config, startBlock, endBlock) => {
-  if (!web3 || !web3.eth.net.isListening()) {
-    console.log('Error: Web3 is not connected. Retrying connection shortly...');
-    setTimeout(() => {
-      runPatcherBlocks(config);
-    }, 3000);
-    return;
-  }
-  if (typeof startBlock === 'undefined' || typeof endBlock === 'undefined') {
-    endBlock = await web3.eth.getBlockNumber();
-  }
-  let batchCount = 100;
-  startBlock = endBlock - batchCount;
-  const blockFind = Block.find({
-    number: {
-      $gt: startBlock,
-      $lte: endBlock
-    }
-  }, 'number').lean(true).sort('-number').limit(batchCount);
-  blockFind.exec(async (err, docs) => {
-    if (err || !docs || docs.length < batchCount) {
-      console.log('start patch blocks.', docs.length);
-    }
-    let patchBlock = startBlock;
-    let count = 0;
-    console.log(`Patching from #${startBlock} to #${endBlock}`);
-    while (count < config.patchBlocks && patchBlock <= endBlock) {
-      if (!('quiet' in config && config.quiet === true)) {
-        console.log(`fix Patching Block: ${patchBlock}`);
-      }
-      web3.eth.getBlock(patchBlock, true, (error, patchData) => {
-        if (error) {
-          console.log(`Warning: error on getting block with hash/number: ${patchBlock}: ${error}`);
-        } else if (patchData === null) {
-          console.log(`Warning: null block data received from the block with hash/number: ${patchBlock}`);
-        } else {
-          console.log(`fix checkBlockDBExistsThenWrite Block: ${patchBlock}`);
-          checkBlockDBExistsThenWrite(config, patchData);
-        }
-      });
-      patchBlock++;
-      count++;
-    }
-    // flush
-    writeBlockToDB(config, null, true);
-    writeTransactionsToDB(config, null, true);
-
-    endBlock = endBlock - batchCount;
-    console.log("setTimeout: runPatcher", endBlock);
-    setTimeout(() => {
-      runPatcherBlocks(config, startBlock, endBlock);
-    }, 1000);
-  });
-};
 
 /**
   This will be used for the patcher(experimental)
@@ -710,5 +653,3 @@ if (config.settings.useFiat) {
     getQuote();
   }, quoteInterval);
 }
-console.log('fixing blocks');
-runPatcherBlocks(config);

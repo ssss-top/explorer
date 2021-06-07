@@ -8,6 +8,7 @@
     "start": "concurrently \"node tools/sync.js \" \"node app.js\" ",
     "app": "node app.js",
     "sync": "node tools/sync.js",
+    "repair": "node tools/repairdata.js",
     "stats": "node tools/stats.js",
     "rich": "node tools/richlist.js",
     "test": "mocha --exit",
