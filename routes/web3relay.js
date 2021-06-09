@@ -178,7 +178,7 @@ exports.data = async (req, res) => {
     //   res.write(JSON.stringify(filterTrace(tx)));
     //   res.end();
     // }
-    
+
     // web3.trace.transaction(txHash, (err, tx) => {
     //   if (err || !tx) {
     //     console.error(`TraceWeb3 error :${err}`);
@@ -189,21 +189,21 @@ exports.data = async (req, res) => {
     //   res.end();
     // });
   } else if ('addr_trace' in req.body) {
-    var addr = req.body.addr_trace.toLowerCase();
+    // var addr = req.body.addr_trace.toLowerCase();
     // need to filter both to and from
     // from block to end block, paging "toAddress":[addr],
     // start from creation block to speed things up
     // TODO: store creation block
-    const filter = { 'fromBlock': '0x1d4c00', 'toAddress': [addr] };
-    web3.trace.filter(filter, (err, tx) => {
-      if (err || !tx) {
-        console.error(`TraceWeb3 error :${err}`);
-        res.write(JSON.stringify({ 'error': true }));
-      } else {
-        res.write(JSON.stringify(filterTrace(tx)));
-      }
-      res.end();
-    });
+    // const filter = { 'fromBlock': '0x1d4c00', 'toAddress': [addr] };
+    // web3.trace.filter(filter, (err, tx) => {
+    //   if (err || !tx) {
+    //     console.error(`TraceWeb3 error :${err}`);
+    //     res.write(JSON.stringify({ 'error': true }));
+    //   } else {
+    //     res.write(JSON.stringify(filterTrace(tx)));
+    //   }
+    //   res.end();
+    // });
   } else if ('addr' in req.body) {
     var addr = req.body.addr.toLowerCase();
     const { options } = req.body;
