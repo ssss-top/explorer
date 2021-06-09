@@ -44,6 +44,8 @@ const getAddr = async (req, res) => {
   const limit = parseInt(req.body.length);
   const start = parseInt(req.body.start);
 
+  console.log('==============================', addr, count, limit, start)
+
   const data = {
     draw: parseInt(req.body.draw), recordsFiltered: count, recordsTotal: count, mined: 0,
   };

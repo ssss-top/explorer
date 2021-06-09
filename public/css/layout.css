@@ -48,7 +48,7 @@
     margin: 0;
     border: 0;
     padding: 0;
-    height: 126px;
+    height: 72px;
     background-image: none;
 }
 
@@ -1093,6 +1093,7 @@ body,html {
     width: 100%;
     display: table-cell;
     height: 100%;
+    background-color: #f0f6fb;
 }
 
 .page-container {
