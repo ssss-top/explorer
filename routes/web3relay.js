@@ -66,54 +66,86 @@ exports.data = async (req, res) => {
 
   if ('tx' in req.body) {
     var txHash = req.body.tx.toLowerCase();
-
     Transaction.findOne({ hash: txHash }).lean(true).exec(async (err, doc) => {
       if (err || !doc) {
-        web3.eth.getTransaction(txHash, (err, tx) => {
-          if (err || !tx) {
-            console.error(`TxWeb3 error :${err}`);
-            if (!tx) {
-              web3.eth.getBlock(txHash, (err, block) => {
-                if (err || !block) {
-                  console.error(`BlockWeb3 error :${err}`);
-                  res.write(JSON.stringify({ 'error': true }));
-                } else {
-                  console.log(`BlockWeb3 found: ${txHash}`);
-                  res.write(JSON.stringify({ 'error': true, 'isBlock': true }));
-                }
-                res.end();
-              });
-            } else {
-              res.write(JSON.stringify({ 'error': true }));
-              res.end();
-            }
+        const tx = await web3.eth.getTransaction(txHash)
+        if (!tx) {
+          const block = await web3.eth.getBlock(txHash)
+          if (block) {
+            console.log(`BlockWeb3 found: ${txHash}`);
+            res.write(JSON.stringify({ 'error': true, 'isBlock': true }));
           } else {
-            const ttx = tx;
-            ttx.value = etherUnits.toEther(new BigNumber(tx.value), 'wei');
-            //get TxReceipt status & gasUsed
-            web3.eth.getTransactionReceipt(txHash, (err, receipt) => {
-              if (err) {
-                console.error(err);
-                return;
-              }
-              ttx.gasUsed = receipt.gasUsed;
-              if (receipt.status) {
-                ttx.status = receipt.status;
-              }
-              if (!tx.to && !tx.creates) {
-                if (receipt && receipt.contractAddress) {
-                  ttx.creates = receipt.contractAddress;
-                }
-              }
-            });
-            //get timestamp from block
-            const block = web3.eth.getBlock(tx.blockNumber, (err, block) => {
-              if (!err && block) ttx.timestamp = block.timestamp;
-              ttx.isTrace = (ttx.input != '0x');
-              txResponse = ttx;
-            });
+            console.log('get block failed')
+            res.write(JSON.stringify({ 'error': true }));
           }
-        });
+          res.end();
+        } else {
+          const ttx = tx;
+          ttx.value = etherUnits.toEther(new BigNumber(tx.value), 'wei');
+          //get TxReceipt status & gasUsed
+          const receipt = await web3.eth.getTransactionReceipt(txHash)
+          if (receipt) {
+            ttx.gasUsed = receipt.gasUsed;
+            if (receipt.status) {
+              ttx.status = receipt.status;
+            }
+            if (!tx.to && !tx.creates) {
+              if (receipt && receipt.contractAddress) {
+                ttx.creates = receipt.contractAddress;
+              }
+            }
+          }
+          //get timestamp from block
+          const block = await web3.eth.getBlock(tx.blockNumber)
+          if (!err && block) ttx.timestamp = block.timestamp;
+          ttx.isTrace = (ttx.input !== '0x');
+          txResponse = ttx;
+        }
+        // web3.eth.getTransaction(txHash, (err, tx) => {
+        //   if (err || !tx) {
+        //     console.error(`TxWeb3 error :${err}`);
+        //     if (!tx) {
+        //       web3.eth.getBlock(txHash, (err, block) => {
+        //         if (err || !block) {
+        //           console.error(`BlockWeb3 error :${err}`);
+        //           res.write(JSON.stringify({ 'error': true }));
+        //         } else {
+        //           console.log(`BlockWeb3 found: ${txHash}`);
+        //           res.write(JSON.stringify({ 'error': true, 'isBlock': true }));
+        //         }
+        //         res.end();
+        //       });
+        //     } else {
+        //       res.write(JSON.stringify({ 'error': true }));
+        //       res.end();
+        //     }
+        //   } else {
+        //     const ttx = tx;
+        //     ttx.value = etherUnits.toEther(new BigNumber(tx.value), 'wei');
+        //     //get TxReceipt status & gasUsed
+        //     web3.eth.getTransactionReceipt(txHash, (err, receipt) => {
+        //       if (err) {
+        //         console.error(err);
+        //         return;
+        //       }
+        //       ttx.gasUsed = receipt.gasUsed;
+        //       if (receipt.status) {
+        //         ttx.status = receipt.status;
+        //       }
+        //       if (!tx.to && !tx.creates) {
+        //         if (receipt && receipt.contractAddress) {
+        //           ttx.creates = receipt.contractAddress;
+        //         }
+        //       }
+        //     });
+        //     //get timestamp from block
+        //     const block = web3.eth.getBlock(tx.blockNumber, (err, block) => {
+        //       if (!err && block) ttx.timestamp = block.timestamp;
+        //       ttx.isTrace = (ttx.input != '0x');
+        //       txResponse = ttx;
+        //     });
+        //   }
+        // });
       } else {
         txResponse = doc;
       }
@@ -140,17 +172,22 @@ exports.data = async (req, res) => {
     });
 
   } else if ('tx_trace' in req.body) {
-    var txHash = req.body.tx_trace.toLowerCase();
-
-    web3.trace.transaction(txHash, (err, tx) => {
-      if (err || !tx) {
-        console.error(`TraceWeb3 error :${err}`);
-        res.write(JSON.stringify({ 'error': true }));
-      } else {
-        res.write(JSON.stringify(filterTrace(tx)));
-      }
-      res.end();
-    });
+    // var txHash = req.body.tx_trace.toLowerCase();
+    // const tx = await web3.trace.transaction(txHash)
+    // if (tx) {
+    //   res.write(JSON.stringify(filterTrace(tx)));
+    //   res.end();
+    // }
+    
+    // web3.trace.transaction(txHash, (err, tx) => {
+    //   if (err || !tx) {
+    //     console.error(`TraceWeb3 error :${err}`);
+    //     res.write(JSON.stringify({ 'error': true }));
+    //   } else {
+    //     res.write(JSON.stringify(filterTrace(tx)));
+    //   }
+    //   res.end();
+    // });
   } else if ('addr_trace' in req.body) {
     var addr = req.body.addr_trace.toLowerCase();
     // need to filter both to and from
