@@ -3,8 +3,13 @@ const mongoose = require('mongoose');
 const Block = mongoose.model('Block');
 const Transaction = mongoose.model('Transaction');
 const Account = mongoose.model('Account');
+const TokenTransfer = mongoose.model('TokenTransfer');
 const async = require('async');
 const filters = require('./filters');
+const Web3 = require('web3');
+var config = require('../config.json');
+const web3 = new Web3(new Web3.providers.WebsocketProvider(`ws://${config.nodeAddr}:${config.wsPort.toString()}`));
+
 
 module.exports = function (app) {
   const web3relay = require('./web3relay');
@@ -50,9 +55,18 @@ const getAddr = async (req, res) => {
     draw: parseInt(req.body.draw), recordsFiltered: count, recordsTotal: count, mined: 0,
   };
 
-  const addrFind = Transaction.find({ $or: [{ 'to': addr }, { 'from': addr }] });
+  let addrFind =0;
+  let code = await web3.eth.getCode(addr);
+  if ( code === "0x") {
+    console.log('Transaction addr', code);
+    addrFind = Transaction.find({ $or: [{ 'to': addr }, { 'from': addr }] });
+  } else {
+    console.log('TokenTransfer addr');
+    addrFind = TokenTransfer.find({ $or: [{ 'to': addr }, { 'from': addr }] });
+    // config.settings.symbol = "gbzz";
+  }
 
-  let sortOrder = '-blockNumber';
+    let sortOrder = '-blockNumber';
   if (req.body.order && req.body.order[0] && req.body.order[0].column) {
     // date or blockNumber column
     if (req.body.order[0].column == 1 || req.body.order[0].column == 6) {

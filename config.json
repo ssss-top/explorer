@@ -1,5 +1,5 @@
 {
-    "nodeAddr": "172.16.4.99",
+    "nodeAddr": "47.57.1.94",
     "wsPort": 8546,
     "startBlock": 0,
     "endBlock": "latest",
@@ -11,9 +11,9 @@
     "patchBlocks": 100,
     "bulkSize": 100,
     "settings": {
-        "symbol": "BZZ",
-        "name": "BZZ",
-        "title": "BZZ Explorer",
+        "symbol": "ETH",
+        "name": "ETH",
+        "title": "ETH Explorer",
         "contact": "www.ssss.top",
         "poweredbyCustom": false,
         "poweredbyEtcImage": "/img/powered-by-etcexplorer-w.png",
