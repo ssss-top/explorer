@@ -49,21 +49,22 @@ const getAddr = async (req, res) => {
   const limit = parseInt(req.body.length);
   const start = parseInt(req.body.start);
 
-  console.log('==============================', addr, count, limit, start)
-
   const data = {
     draw: parseInt(req.body.draw), recordsFiltered: count, recordsTotal: count, mined: 0,
   };
 
   let addrFind =0;
+  let token = '';
   let code = await web3.eth.getCode(addr);
   if ( code === "0x") {
     console.log('Transaction addr', code);
     addrFind = Transaction.find({ $or: [{ 'to': addr }, { 'from': addr }] });
+    token = 'eth';
   } else {
     console.log('TokenTransfer addr');
     addrFind = TokenTransfer.find({ $or: [{ 'to': addr }, { 'from': addr }] });
     // config.settings.symbol = "gbzz";
+    token = 'gbzz';
   }
 
     let sortOrder = '-blockNumber';
@@ -78,8 +79,10 @@ const getAddr = async (req, res) => {
 
   addrFind.lean(true).sort(sortOrder).skip(start).limit(limit)
     .exec('find', (err, docs) => {
-      if (docs) data.data = filters.filterTX(docs, addr);
-      else data.data = [];
+      if (docs) {
+        data.data = filters.filterTX(docs, addr);
+        data.token = token;
+      } else data.data = [];
       res.write(JSON.stringify(data));
       res.end();
     });

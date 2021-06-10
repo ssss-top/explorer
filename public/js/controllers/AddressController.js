@@ -31,9 +31,13 @@ angular.module('BlocksApp').controller('AddressController', function($stateParam
         ajax: function(data, callback, settings) {
           data.addr = $scope.addrHash;
           data.count = $scope.addr.count;
+          $scope.settings.token = '';
           $http.post('/addr', data).then(function(resp) {
             // save data
             $scope.data = resp.data;
+            if ($scope.data.token === 'gbzz') {
+                $scope.settings.token = 'gBzz';
+            }
             // check $scope.records* if available.
             resp.data.recordsTotal = $scope.recordsTotal ? $scope.recordsTotal : resp.data.recordsTotal;
             resp.data.recordsFiltered = $scope.recordsFiltered ? $scope.recordsFiltered : resp.data.recordsFiltered;

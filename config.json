@@ -1,6 +1,6 @@
 {
-    "nodeAddr": "47.57.1.94",
-    "wsPort": 8546,
+    "nodeAddr": "202.102.11.178",
+    "wsPort": 18546,
     "startBlock": 0,
     "endBlock": "latest",
     "quiet": false,
@@ -11,9 +11,10 @@
     "patchBlocks": 100,
     "bulkSize": 100,
     "settings": {
-        "symbol": "ETH",
-        "name": "ETH",
-        "title": "ETH Explorer",
+      "logo": "https://www.ssss.top/_nuxt/img/d7b5990.png",
+      "symbol": "ETH",
+      "name": "ETH",
+      "title": "ETH Explorer",
         "contact": "www.ssss.top",
         "poweredbyCustom": false,
         "poweredbyEtcImage": "/img/powered-by-etcexplorer-w.png",

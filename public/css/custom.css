@@ -164,8 +164,8 @@ li.ng-scope {
     padding: 10px 20px 20px 20px;
 }
 
-.page-header-top {
-    background-color: #0d1b3e;
+.page-header {
+    background-color: #0d1b3e !important;
 }
 
 .top-menu>ul>li>a:hover{
