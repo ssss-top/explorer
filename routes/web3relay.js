@@ -17,6 +17,7 @@ const etherUnits = require(`${__lib}etherUnits.js`);
 require('../db.js');
 const mongoose = require('mongoose');
 
+const TokenTransfer = mongoose.model('TokenTransfer');
 const Block = mongoose.model('Block');
 const Transaction = mongoose.model('Transaction');
 const Market = mongoose.model('Market');
@@ -62,7 +63,7 @@ async function detectNode() {
 detectNode();
 
 exports.data = async (req, res) => {
-  console.log(req.body);
+  console.log("web3relay", req.body);
 
   if ('tx' in req.body) {
     var txHash = req.body.tx.toLowerCase();
@@ -219,19 +220,29 @@ exports.data = async (req, res) => {
         addrData = { 'error': true };
       }
     }
-    if (options.indexOf('count') > -1) {
-      try {
-        addrData['count'] = await web3.eth.getTransactionCount(addr);
-      } catch (err) {
-        console.error(`AddrWeb3 error :${err}`);
-        addrData = { 'error': true };
-      }
-    }
     if (options.indexOf('bytecode') > -1) {
       try {
         addrData['bytecode'] = await web3.eth.getCode(addr);
         if (addrData['bytecode'].length > 2) addrData['isContract'] = true;
         else addrData['isContract'] = false;
+      } catch (err) {
+        console.error(`AddrWeb3 error :${err}`);
+        addrData = { 'error': true };
+      }
+    }
+    if (options.indexOf('count') > -1) {
+      try {
+        if (addrData['isContract'] === false) {
+          addrData['count'] = await web3.eth.getTransactionCount(addr);
+        } else{
+          TokenTransfer.count({$and: [{'method':"gbzzTransfer"},{ $or: [{ 'to': addr }, { 'from': addr }] }]}, (err, count) => {
+            if (err) {
+              console.log(`TokenTransfer count :${err}`);
+            }
+            console.log("TokenTransfer count ", count);
+            addrData['count'] = count;
+          })
+        }
       } catch (err) {
         console.error(`AddrWeb3 error :${err}`);
         addrData = { 'error': true };

@@ -57,12 +57,12 @@ const getAddr = async (req, res) => {
   let token = '';
   let code = await web3.eth.getCode(addr);
   if ( code === "0x") {
-    console.log('Transaction addr', code);
+    console.log('Transaction addr', code, limit);
     addrFind = Transaction.find({ $or: [{ 'to': addr }, { 'from': addr }] });
     token = 'eth';
   } else {
-    console.log('TokenTransfer addr');
-    addrFind = TokenTransfer.find({ $or: [{ 'to': addr }, { 'from': addr }] });
+    console.log('TokenTransfer addr', limit);
+    addrFind = TokenTransfer.find({$and: [{'method':"gbzzTransfer"},{ $or: [{ 'to': addr }, { 'from': addr }] }]});
     // config.settings.symbol = "gbzz";
     token = 'gbzz';
   }

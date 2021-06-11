@@ -81,8 +81,11 @@ angular.module('BlocksApp').controller('AddressController', function($stateParam
         },
         "columnDefs": [
             { "render": function(data, type, row) {
-                        return data/10000000000000000
-                }, "targets": [ 4 ], },
+                    if ($scope.data.token === "gbzz" )
+                        return (data/10000000000000000).toFixed(8);
+                    else
+                        return data
+                }, "targets": [ 4 ]},
           { "targets": [ 5 ], "visible": false, "searchable": false },
           {"type": "date", "targets": 6},
           {"orderable": false, "targets": [0,2,3,4]},
