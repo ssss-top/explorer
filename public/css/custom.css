@@ -142,8 +142,9 @@ li.ng-scope {
 @media (max-width: 480px) {
   .page-header .page-header-top .top-menu .navbar-nav,
   .search-form, .page-header .page-header-top .top-menu .navbar-nav>li.dropdown,
-  .page-header .search-form .input-group .form-control{width:100%;}
+  .page-header .search-form .input-group .form-control{width:100%; background-color: #0d1b3e;}
   .search-form.open{width:100%!important;}
+  .page-header .input-group-btn { background-color: #0d1b3e;}
 }
 .page-spinner-bar{margin-top:-84px;margin-left:-98px;top:50%;left:50%;}
 .mini-logo {
