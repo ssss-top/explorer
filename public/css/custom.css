@@ -1,4 +1,9 @@
 div.page-logo {overflow: visible;}
+.page-name {
+    /*margin: 20px 20px 0px 0px;*/
+    font-size: 25px;
+    color: #0c91e5;
+}
 img.logo-default {
     max-height: 72px;
     height: 50px;

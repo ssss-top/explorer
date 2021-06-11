@@ -11,10 +11,10 @@
     "patchBlocks": 100,
     "bulkSize": 100,
     "settings": {
-      "logo": "https://www.ssss.top/_nuxt/img/d7b5990.png",
+      "logo": "/img/ssss_top_logo.png",
       "symbol": "ETH",
-      "name": "ETH",
-      "title": "ETH Explorer",
+      "name": "BZZ",
+      "title": "BZZ Explorer",
         "contact": "www.ssss.top",
         "poweredbyCustom": false,
         "poweredbyEtcImage": "/img/powered-by-etcexplorer-w.png",
