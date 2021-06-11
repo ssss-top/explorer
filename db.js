@@ -148,6 +148,7 @@ mongoose.Promise = global.Promise;
 mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost/explorerDB', {
   useMongoClient: true,
   useNewUrlParser: true,
+  useUnifiedTopology: true,
   // poolSize: 5,
   // rs_name: 'myReplicaSetName',
   // user: 'explorer',
